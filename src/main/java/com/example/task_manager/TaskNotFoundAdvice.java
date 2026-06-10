@@ -1,0 +1,19 @@
+package com.example.task_manager;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import com.example.task_manager.TaskNotFoundException;
+
+@RestControllerAdvice
+public class TaskNotFoundAdvice {
+
+	@ExceptionHandler(TaskNotFoundException.class)
+	@ResponseStatus(HttpStatus.NOT_FOUND)
+	String taskNotFoundHadler(TaskNotFoundException ex){
+		return ex.getMessage();
+	}
+	
+}
