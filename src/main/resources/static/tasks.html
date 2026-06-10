@@ -79,6 +79,7 @@
                     <div class="task-body">
                         <div class="task-title">${escapeHtml(t.title)}</div>
                         ${t.content ? '<div class="task-desc">' + escapeHtml(t.content) + '</div>' : ''}
+                        ${t.startDate ? '<div class="task-date">' + new Date(t.startDate).toLocaleString() + '</div>' : ''}
                     </div>
                     <div class="task-actions">
                         <button class="btn-edit" onclick="editTask(${t.taskId})">Edit</button>

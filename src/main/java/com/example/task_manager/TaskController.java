@@ -2,6 +2,7 @@ package com.example.task_manager;
 
 import java.util.List;
 import java.util.Map;
+import java.time.LocalDateTime;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -38,7 +39,9 @@ public class TaskController {
     Task newTask(@RequestBody Map<String, String> body, Authentication auth) {
         Integer userId = (Integer) auth.getPrincipal();
         User user = userRepository.findById(userId).orElseThrow();
-        Task task = new Task(body.get("title"), body.get("content"), user);
+
+        Task task = new Task(body.get("title"), body.get("content"), user, LocalDateTime.now());
+
         return repository.save(task);
     }
 

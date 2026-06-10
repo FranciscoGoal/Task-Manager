@@ -10,6 +10,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "task")
@@ -31,12 +32,17 @@ public class Task {
     @JsonIgnoreProperties({"hibernateLazyInitializer", "password"})
     private User user;
 
+    @Column(name = "start_date")
+    private LocalDateTime startDateTime;   
+
+
     public Task() {}
 
-    public Task(String title, String content, User user) {
+    public Task(String title, String content, User user, LocalDateTime startDateTime) {
         this.title = title;
         this.content = content;
         this.user = user;
+        this.startDateTime = startDateTime;
     }
 
     public Integer getTaskId() { return taskId; }
@@ -47,4 +53,6 @@ public class Task {
     public void setContent(String content) { this.content = content; }
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
+    public LocalDateTime getStartDate() { return startDateTime; }
+    public void setStartDate(LocalDateTime startDateTime) { this.startDateTime = startDateTime; }
 }
