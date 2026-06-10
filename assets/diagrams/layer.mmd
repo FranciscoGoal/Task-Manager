@@ -1,0 +1,13 @@
+flowchart LR
+    Browser["🌐 Browser"] -->|"HTTP :8080"| SB["Spring Boot"]
+    Client["💻 curl / Postman"] -->|"REST API"| SB
+
+    subgraph SB [Spring Boot Application]
+        Web["static/index.html<br/>Web UI"]
+        Ctrl["TaskController<br/>REST Endpoints"]
+        Repo["TaskRepository<br/>JPA"]
+        Advice["TaskNotFoundAdvice<br/>@ExceptionHandler"]
+    end
+
+    Web --> Browser
+    Repo --> DB[("H2<br/>In-Memory Database")]

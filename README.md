@@ -54,56 +54,15 @@ Open **http://localhost:8080** in your browser.
 
 ### Layer Diagram
 
-```mermaid
-flowchart LR
-    Browser["🌐 Browser"] -->|"HTTP :8080"| SB["Spring Boot"]
-    Client["💻 curl / Postman"] -->|"REST API"| SB
-
-    subgraph SB [Spring Boot Application]
-        Web["static/index.html<br/>Web UI"]
-        Ctrl["TaskController<br/>REST Endpoints"]
-        Repo["TaskRepository<br/>JPA"]
-        Advice["TaskNotFoundAdvice<br/>@ExceptionHandler"]
-    end
-
-    Web --> Browser
-    Repo --> DB[("H2<br/>In-Memory Database")]
-```
+![Layer Diagram](assets/diagrams/layer.svg)
 
 ### Request Flow
 
-```mermaid
-sequenceDiagram
-    participant Client
-    participant Controller as TaskController
-    participant Repository as TaskRepository
-    participant DB as H2 Database
-
-    Client->>Controller: GET /task
-    Controller->>Repository: findAll()
-    Repository->>DB: SELECT * FROM task
-    DB-->>Repository: [Task, ...]
-    Repository-->>Controller: Task list
-    Controller-->>Client: 200 OK — JSON array
-
-    Client->>Controller: POST /task {title, description}
-    Controller->>Repository: save(newTask)
-    Repository->>DB: INSERT INTO task
-    DB-->>Repository: Task (with generated id)
-    Repository-->>Controller: Task
-    Controller-->>Client: 200 OK — JSON object
-```
+![Request Flow](assets/diagrams/sequence.svg)
 
 ### Entity-Relationship
 
-```mermaid
-erDiagram
-    TASK {
-        Long id PK "AUTO_INCREMENT"
-        String title "NOT NULL"
-        String description "NULLABLE"
-    }
-```
+![ER Diagram](assets/diagrams/er.svg)
 
 | Field | Type | Constraints | Description |
 |-------|------|-------------|-------------|

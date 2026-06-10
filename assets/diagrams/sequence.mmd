@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant Client
+    participant Controller as TaskController
+    participant Repository as TaskRepository
+    participant DB as H2 Database
+
+    Client->>Controller: GET /task
+    Controller->>Repository: findAll()
+    Repository->>DB: SELECT * FROM task
+    DB-->>Repository: [Task, ...]
+    Repository-->>Controller: Task list
+    Controller-->>Client: 200 OK — JSON array
+
+    Client->>Controller: POST /task {title, description}
+    Controller->>Repository: save(newTask)
+    Repository->>DB: INSERT INTO task
+    DB-->>Repository: Task (with generated id)
+    Repository-->>Controller: Task
+    Controller-->>Client: 200 OK — JSON object
