@@ -60,6 +60,7 @@ CREATE TABLE `task` (
   `task_id` INT NOT NULL AUTO_INCREMENT,
   `title` VARCHAR(20) NOT NULL,
   `content` VARCHAR(100) NOT NULL,
+  `start_date` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `user_id` INT DEFAULT NULL,
   PRIMARY KEY (`task_id`),
   KEY `idx_user_id` (`user_id`),
@@ -118,6 +119,7 @@ Open **http://localhost:8080** in your browser and sign in with `Fran` / `fran12
 | `taskId` | `Integer` | PK, Auto-generated | Unique identifier |
 | `title` | `String` | `NOT NULL` | Task name |
 | `content` | `String` | `NOT NULL` | Task details |
+| `startDate` | `LocalDateTime` | — | Auto-assigned on creation |
 | `user` | `User` | FK → `user.user_id` | Owner |
 
 ---
@@ -198,6 +200,7 @@ curl http://localhost:8080/task/my \
     "taskId": 3,
     "title": "Huevos",
     "content": "comprar huevos XL",
+    "startDate": "2026-06-10T21:30:00",
     "user": { "userId": 1, "username": "Fran" }
   }
 ]
@@ -224,8 +227,8 @@ Creates a new task for the authenticated user.
 
 | | |
 |---|---|
-| **Request body** | `{ "title": "string (required)", "content": "string (required)" }` |
-| **Response** | `200 OK` — `Task` with assigned `taskId` |
+| **Request body** | `{ "title": "string (required)", "content": "string (required)" }` — `startDate` is auto-assigned |
+| **Response** | `200 OK` — `Task` with assigned `taskId` and `startDate` |
 
 ```bash
 curl -X POST http://localhost:8080/task \
@@ -239,6 +242,7 @@ curl -X POST http://localhost:8080/task \
   "taskId": 5,
   "title": "Write report",
   "content": "Q3 financial summary",
+  "startDate": "2026-06-10T21:30:00",
   "user": { "userId": 1, "username": "Fran" }
 }
 ```
@@ -265,6 +269,7 @@ curl http://localhost:8080/task/3 \
   "taskId": 3,
   "title": "Huevos",
   "content": "comprar huevos XL",
+  "startDate": "2026-06-10T21:30:00",
   "user": { "userId": 1, "username": "Fran" }
 }
 ```
@@ -278,7 +283,7 @@ Replaces an existing task (full update). If the task does not exist, it is creat
 | | |
 |---|---|
 | **Path parameter** | `id` — `Integer` |
-| **Request body** | `{ "taskId": Integer, "title": "string", "content": "string" }` |
+| **Request body** | `{ "taskId": Integer, "title": "string", "content": "string" }` — `startDate` is preserved |
 | **Response** | `200 OK` — Updated `Task` |
 
 ```bash
@@ -421,6 +426,7 @@ Open **http://localhost:8080** in your browser.
 - [x] **Persistent database** — MySQL support (replaced in-memory H2)
 - [x] **Authentication** — JWT-based user login and registration
 - [ ] **Task categories** — add labels and filters
+- [x] **Auto timestamp** — creation date tracked automatically
 - [ ] **Due dates** — deadline tracking for tasks
 - [ ] **Docker Compose** — add MySQL service for local development
 - [ ] **Deploy** — one-click deploy to Railway / Render / Fly.io

@@ -3,6 +3,7 @@ erDiagram
         Integer taskId PK "AUTO_INCREMENT"
         String title "NOT NULL"
         String content "NOT NULL"
+        LocalDateTime startDate "AUTO: now()"
         Integer userId FK "REFERENCES user(user_id)"
     }
     USER {
