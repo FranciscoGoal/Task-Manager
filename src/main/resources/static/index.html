@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,13 +11,13 @@
         <h1>Task Manager</h1>
 
         <div class="form" id="form">
-            <input type="text" id="title" placeholder="Título de la tarea" autocomplete="off">
-            <input type="text" id="description" placeholder="Descripción (opcional)" autocomplete="off">
-            <button id="addBtn">Añadir Tarea</button>
+            <input type="text" id="title" placeholder="Task title" autocomplete="off">
+            <input type="text" id="description" placeholder="Description (optional)" autocomplete="off">
+            <button id="addBtn">Add Task</button>
         </div>
 
         <div class="task-list" id="taskList">
-            <div class="empty">No hay tareas aún.</div>
+            <div class="empty">No tasks yet.</div>
         </div>
     </div>
 
@@ -40,13 +40,13 @@
                 const tasks = await res.json();
                 renderTasks(tasks);
             } catch (err) {
-                taskList.innerHTML = `<div class="empty">Error al cargar: ${err.message}</div>`;
+                taskList.innerHTML = `<div class="empty">Error loading: ${err.message}</div>`;
             }
         }
 
         function renderTasks(tasks) {
             if (!tasks.length) {
-                taskList.innerHTML = '<div class="empty">No hay tareas aún.</div>';
+                taskList.innerHTML = '<div class="empty">No tasks yet.</div>';
                 return;
             }
             taskList.innerHTML = tasks.map(t => `
@@ -56,8 +56,8 @@
                         ${t.description ? `<div class="task-desc">${escapeHtml(t.description)}</div>` : ''}
                     </div>
                     <div class="task-actions">
-                        <button class="btn-edit" onclick="editTask(${t.id})">Editar</button>
-                        <button class="btn-delete" onclick="deleteTask(${t.id})">Eliminar</button>
+                        <button class="btn-edit" onclick="editTask(${t.id})">Edit</button>
+                        <button class="btn-delete" onclick="deleteTask(${t.id})">Delete</button>
                     </div>
                 </div>
             `).join('');
@@ -78,18 +78,18 @@
                 descInp.value = '';
                 await loadTasks();
             } catch (err) {
-                alert('Error al crear: ' + err.message);
+                alert('Error creating: ' + err.message);
             }
         }
 
         async function deleteTask(id) {
-            if (!confirm('¿Eliminar esta tarea?')) return;
+            if (!confirm('Delete this task?')) return;
             try {
                 const res = await fetch(`${API}/${id}`, { method: 'DELETE' });
                 if (!res.ok) throw new Error(`Error ${res.status}`);
                 await loadTasks();
             } catch (err) {
-                alert('Error al eliminar: ' + err.message);
+                alert('Error deleting: ' + err.message);
             }
         }
 
@@ -101,14 +101,14 @@
             const desc = descEl ? descEl.textContent : '';
 
             body.innerHTML = `
-                <input class="edit-input" id="editTitle-${id}" value="${escapeHtml(title)}" placeholder="Título">
-                <input class="edit-input" id="editDesc-${id}" value="${escapeHtml(desc)}" placeholder="Descripción" style="margin-top:4px">
+                <input class="edit-input" id="editTitle-${id}" value="${escapeHtml(title)}" placeholder="Title">
+                <input class="edit-input" id="editDesc-${id}" value="${escapeHtml(desc)}" placeholder="Description" style="margin-top:4px">
             `;
 
             const actions = card.querySelector('.task-actions');
             actions.innerHTML = `
-                <button class="btn-save" onclick="saveTask(${id})">Guardar</button>
-                <button class="btn-cancel" onclick="loadTasks()">Cancelar</button>
+                <button class="btn-save" onclick="saveTask(${id})">Save</button>
+                <button class="btn-cancel" onclick="loadTasks()">Cancel</button>
             `;
 
             const titleInput = document.getElementById(`editTitle-${id}`);
@@ -133,7 +133,7 @@
                 if (!res.ok) throw new Error(`Error ${res.status}`);
                 await loadTasks();
             } catch (err) {
-                alert('Error al guardar: ' + err.message);
+                alert('Error saving: ' + err.message);
             }
         }
 
