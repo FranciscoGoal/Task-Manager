@@ -1,4 +1,4 @@
-# Task Manager
+# Task Manager API
 
 ![Java](https://img.shields.io/badge/Java-25-%23ED8B00?style=flat-square)
 ![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.0.6-%236DB33F?style=flat-square)
