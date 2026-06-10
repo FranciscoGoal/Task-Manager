@@ -66,7 +66,7 @@ CREATE TABLE `task` (
   CONSTRAINT `fk_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`)
 );
 
-INSERT INTO `user` (`username`, `password`) VALUES ('Fran', 'fran123'), ('Eva', 'Eva123');
+INSERT INTO `user` (`username`, `password`) VALUES ('test', 'test'));
 ```
 
 > **Note:** Passwords are automatically hashed with bcrypt on first application startup.
