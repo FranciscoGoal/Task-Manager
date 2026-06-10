@@ -4,8 +4,9 @@
 ![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.0.6-%236DB33F?style=flat-square)
 ![H2](https://img.shields.io/badge/Database-H2-%23007396?style=flat-square)
 ![License](https://img.shields.io/badge/license-Unlicense-blue?style=flat-square)
+![CI](https://github.com/FranciscoGoal/Task-Manager/actions/workflows/maven.yml/badge.svg)
 
-A lightweight REST API for task management with a built-in web UI. Built with Spring Boot and designed for simplicity —  external database integration in progress.
+A lightweight REST API for task management with a built-in web UI. Built with Spring Boot and designed for simplicity — no external database required.
 
 - **RESTful API** — full CRUD operations with JSON
 - **Web UI** — vanilla HTML/CSS/JS interface at `/`
@@ -23,6 +24,9 @@ A lightweight REST API for task management with a built-in web UI. Built with Sp
 - [Configuration](#configuration)
 - [Project Structure](#project-structure)
 - [Building](#building)
+- [Docker](#docker)
+- [Roadmap](#roadmap)
+- [Contributing](#contributing)
 - [License](#license)
 
 ---
@@ -265,6 +269,47 @@ Generate a production JAR:
 ./mvnw package
 java -jar target/task-manager-0.0.1-SNAPSHOT.jar
 ```
+
+---
+
+## Docker
+
+Build and run the application using Docker:
+
+```bash
+# Build the image
+docker build -t task-manager .
+
+# Run the container
+docker run -p 8080:8080 task-manager
+```
+
+Open **http://localhost:8080** in your browser.
+
+> The `Dockerfile` uses a multi-stage build with `eclipse-temurin:25-jdk-alpine` for compilation and `eclipse-temurin:25-jre-alpine` for runtime. The final image is ~150MB.
+
+---
+
+## Roadmap
+
+- [ ] **Persistent database** — PostgreSQL/MySQL support (currently using in-memory H2)
+- [ ] **Authentication** — JWT-based user authentication
+- [ ] **Task categories** — add labels and filters
+- [ ] **Due dates** — deadline tracking for tasks
+- [ ] **Docker Compose** — add PostgreSQL service for local development
+- [ ] **Deploy** — one-click deploy to Railway / Render / Fly.io
+
+---
+
+## Contributing
+
+Contributions are welcome! Feel free to open an issue or submit a pull request.
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/my-feature`
+3. Commit your changes: `git commit -m "Add my feature"`
+4. Push to the branch: `git push origin feature/my-feature`
+5. Open a Pull Request
 
 ---
 
