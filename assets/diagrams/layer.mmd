@@ -3,11 +3,21 @@ flowchart LR
     Client["💻 curl / Postman"] -->|"REST API"| SB
 
     subgraph SB [Spring Boot Application]
-        Web["static/index.html<br/>Web UI"]
-        Ctrl["TaskController<br/>REST Endpoints"]
-        Repo["TaskRepository<br/>JPA"]
+        Web["login.html / tasks.html<br/>Web UI"]
+        AuthCtrl["AuthController<br/>/login / /register"]
+        AuthSvc["AuthService<br/>Login + Register"]
+        JwtSvc["JwtService<br/>Token gen / parse"]
+        JwtFilter["JwtAuthenticationFilter<br/>JWT validation"]
+        TaskCtrl["TaskController<br/>REST CRUD"]
+        TaskRepo["TaskRepository<br/>JPA"]
+        UserRepo["UserRepository<br/>JPA"]
         Advice["TaskNotFoundAdvice<br/>@ExceptionHandler"]
     end
 
     Web --> Browser
-    Repo --> DB[("H2<br/>In-Memory Database")]
+    TaskRepo --> DB[("MySQL<br/>Database")]
+    UserRepo --> DB
+    AuthCtrl --> AuthSvc
+    AuthSvc --> JwtSvc
+    AuthSvc --> UserRepo
+    TaskCtrl --> TaskRepo

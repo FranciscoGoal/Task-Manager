@@ -3,6 +3,7 @@ erDiagram
         Integer taskId PK "AUTO_INCREMENT"
         String title "NOT NULL"
         String content "NOT NULL"
+        Integer userId FK "REFERENCES user(user_id)"
     }
     USER {
         Integer userId PK "AUTO_INCREMENT"
