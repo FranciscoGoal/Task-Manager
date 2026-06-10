@@ -1,32 +1,50 @@
 package com.example.task_manager;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import java.util.Objects;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 
 @Entity
-public class Task{
+@Table(name = "task")
+public class Task {
 
-	private @Id
-	@GeneratedValue Long id;
-	private String title;
-	private String description;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "task_id")
+    private Integer taskId;
 
-	public Task(){}
+    @Column(nullable = false, length = 20)
+    private String title;
 
-        public Task(String title, String description){
+    @Column(nullable = false, length = 100)
+    private String content;
 
-                this.title = title;
-                this.description = description;
-        }
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "password"})
+    private User user;
 
-        public Long getId(){return id;}
-        public String getTitle(){return title;}
-        public String getDescription(){return description;}
+    public Task() {}
 
-        public void setId(Long id){this.id = id;}
-        public void setTitle(String title){this.title = title;}
-        public void setDescription(String description){this.description = description;}
+    public Task(String title, String content, User user) {
+        this.title = title;
+        this.content = content;
+        this.user = user;
+    }
+
+    public Integer getTaskId() { return taskId; }
+    public void setTaskId(Integer taskId) { this.taskId = taskId; }
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
+    public String getContent() { return content; }
+    public void setContent(String content) { this.content = content; }
+    public User getUser() { return user; }
+    public void setUser(User user) { this.user = user; }
 }
-

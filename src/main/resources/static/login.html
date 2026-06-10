@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Task Manager</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container" style="max-width: 400px;">
+        <h1 id="title">Sign In</h1>
+        <div class="form" id="authForm">
+            <input type="text" id="username" placeholder="Username" autocomplete="off">
+            <input type="password" id="password" placeholder="Password">
+            <button id="actionBtn">Sign In</button>
+            <p style="text-align: center; margin-top: 0.5rem; font-size: 0.85rem; color: #64748b;">
+                <span id="toggleText">Don't have an account?</span>
+                <a href="#" id="toggleLink">Sign Up</a>
+            </p>
+            <div id="errorMsg" style="color: #b91c1c; text-align: center; display: none;"></div>
+        </div>
+    </div>
+    <script>
+        let isRegister = false;
+
+        const title = document.getElementById('title');
+        const usernameInp = document.getElementById('username');
+        const passwordInp = document.getElementById('password');
+        const actionBtn = document.getElementById('actionBtn');
+        const toggleText = document.getElementById('toggleText');
+        const toggleLink = document.getElementById('toggleLink');
+        const errorMsg = document.getElementById('errorMsg');
+
+        toggleLink.addEventListener('click', e => {
+            e.preventDefault();
+            isRegister = !isRegister;
+            title.textContent = isRegister ? 'Sign Up' : 'Sign In';
+            actionBtn.textContent = isRegister ? 'Sign Up' : 'Sign In';
+            toggleText.textContent = isRegister ? 'Already have an account?' : "Don't have an account?";
+            toggleLink.textContent = isRegister ? 'Sign In' : 'Sign Up';
+            errorMsg.style.display = 'none';
+        });
+
+        actionBtn.addEventListener('click', submit);
+        passwordInp.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+        usernameInp.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+
+        async function submit() {
+            const username = usernameInp.value.trim();
+            const password = passwordInp.value.trim();
+            if (!username || !password) return;
+
+            const endpoint = isRegister ? '/register' : '/login';
+
+            try {
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.error || 'Error');
+                }
+                sessionStorage.setItem('token', data.token);
+                sessionStorage.setItem('userId', data.userId);
+                sessionStorage.setItem('username', data.username);
+                window.location.href = '/tasks.html';
+            } catch (err) {
+                errorMsg.textContent = err.message;
+                errorMsg.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -7,6 +7,11 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <div class="top-bar">
+        <span id="userDisplay"></span>
+        <button id="logoutBtn">Logout</button>
+    </div>
+
     <div class="container">
         <h1>Task Manager</h1>
 
@@ -22,6 +27,19 @@
     </div>
 
     <script>
+        const token = sessionStorage.getItem('token');
+        const username = sessionStorage.getItem('username');
+
+        if (!token) {
+            window.location.href = '/login.html';
+        }
+
+        document.getElementById('userDisplay').textContent = username || 'User';
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            sessionStorage.clear();
+            window.location.href = '/login.html';
+        });
+
         const API = '/task';
 
         const titleInp = document.getElementById('title');
@@ -35,12 +53,19 @@
 
         async function loadTasks() {
             try {
-                const res = await fetch(API);
-                if (!res.ok) throw new Error(`Error ${res.status}`);
+                const res = await fetch(API + '/my', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.status === 401 || res.status === 403) {
+                    sessionStorage.clear();
+                    window.location.href = '/login.html';
+                    return;
+                }
+                if (!res.ok) throw new Error('Error ' + res.status);
                 const tasks = await res.json();
                 renderTasks(tasks);
             } catch (err) {
-                taskList.innerHTML = `<div class="empty">Error loading: ${err.message}</div>`;
+                taskList.innerHTML = '<div class="empty">Error loading: ' + err.message + '</div>';
             }
         }
 
@@ -50,14 +75,14 @@
                 return;
             }
             taskList.innerHTML = tasks.map(t => `
-                <div class="task-card" data-id="${t.id}">
+                <div class="task-card" data-id="${t.taskId}">
                     <div class="task-body">
                         <div class="task-title">${escapeHtml(t.title)}</div>
-                        ${t.description ? `<div class="task-desc">${escapeHtml(t.description)}</div>` : ''}
+                        ${t.content ? '<div class="task-desc">' + escapeHtml(t.content) + '</div>' : ''}
                     </div>
                     <div class="task-actions">
-                        <button class="btn-edit" onclick="editTask(${t.id})">Edit</button>
-                        <button class="btn-delete" onclick="deleteTask(${t.id})">Delete</button>
+                        <button class="btn-edit" onclick="editTask(${t.taskId})">Edit</button>
+                        <button class="btn-delete" onclick="deleteTask(${t.taskId})">Delete</button>
                     </div>
                 </div>
             `).join('');
@@ -70,10 +95,13 @@
             try {
                 const res = await fetch(API, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ title, description })
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ title, content: description })
                 });
-                if (!res.ok) throw new Error(`Error ${res.status}`);
+                if (!res.ok) throw new Error('Error ' + res.status);
                 titleInp.value = '';
                 descInp.value = '';
                 await loadTasks();
@@ -85,8 +113,11 @@
         async function deleteTask(id) {
             if (!confirm('Delete this task?')) return;
             try {
-                const res = await fetch(`${API}/${id}`, { method: 'DELETE' });
-                if (!res.ok) throw new Error(`Error ${res.status}`);
+                const res = await fetch(API + '/' + id, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) throw new Error('Error ' + res.status);
                 await loadTasks();
             } catch (err) {
                 alert('Error deleting: ' + err.message);
@@ -94,7 +125,7 @@
         }
 
         function editTask(id) {
-            const card = document.querySelector(`.task-card[data-id="${id}"]`);
+            const card = document.querySelector('.task-card[data-id="' + id + '"]');
             const body = card.querySelector('.task-body');
             const title = body.querySelector('.task-title').textContent;
             const descEl = body.querySelector('.task-desc');
@@ -111,7 +142,7 @@
                 <button class="btn-cancel" onclick="loadTasks()">Cancel</button>
             `;
 
-            const titleInput = document.getElementById(`editTitle-${id}`);
+            const titleInput = document.getElementById('editTitle-' + id);
             titleInput.focus();
             titleInput.setSelectionRange(titleInput.value.length, titleInput.value.length);
             titleInput.addEventListener('keydown', e => {
@@ -121,16 +152,19 @@
         }
 
         async function saveTask(id) {
-            const title = document.getElementById(`editTitle-${id}`).value.trim();
+            const title = document.getElementById('editTitle-' + id).value.trim();
             if (!title) return;
-            const description = document.getElementById(`editDesc-${id}`).value.trim();
+            const description = document.getElementById('editDesc-' + id).value.trim();
             try {
-                const res = await fetch(`${API}/${id}`, {
+                const res = await fetch(API + '/' + id, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id, title, description })
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ taskId: id, title, content: description })
                 });
-                if (!res.ok) throw new Error(`Error ${res.status}`);
+                if (!res.ok) throw new Error('Error ' + res.status);
                 await loadTasks();
             } catch (err) {
                 alert('Error saving: ' + err.message);

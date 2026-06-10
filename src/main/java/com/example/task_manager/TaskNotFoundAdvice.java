@@ -5,15 +5,12 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import com.example.task_manager.TaskNotFoundException;
-
 @RestControllerAdvice
 public class TaskNotFoundAdvice {
 
-	@ExceptionHandler(TaskNotFoundException.class)
-	@ResponseStatus(HttpStatus.NOT_FOUND)
-	String taskNotFoundHadler(TaskNotFoundException ex){
-		return ex.getMessage();
-	}
-	
+    @ExceptionHandler(TaskNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    String taskNotFoundHandler(TaskNotFoundException ex) {
+        return ex.getMessage();
+    }
 }

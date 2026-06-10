@@ -2,15 +2,17 @@
 
 ![Java](https://img.shields.io/badge/Java-25-%23ED8B00?style=flat-square)
 ![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.0.6-%236DB33F?style=flat-square)
-![H2](https://img.shields.io/badge/Database-H2-%23007396?style=flat-square)
+![MySQL](https://img.shields.io/badge/Database-MySQL-%234479A1?style=flat-square)
+![JWT](https://img.shields.io/badge/Auth-JWT-%23000000?style=flat-square)
 ![License](https://img.shields.io/badge/license-Unlicense-blue?style=flat-square)
 ![CI](https://github.com/FranciscoGoal/Task-Manager/actions/workflows/maven.yml/badge.svg)
 
-A lightweight REST API for task management with a built-in web UI. Built with Spring Boot and designed for simplicity — no external database required.
+A REST API for task management with user authentication, persistent MySQL storage, and a built-in web UI. Built with Spring Boot.
 
 - **RESTful API** — full CRUD operations with JSON
-- **Web UI** — vanilla HTML/CSS/JS interface at `/`
-- **H2 Database** — in-memory, zero configuration
+- **Authentication** — JWT-based login and registration
+- **Web UI** — vanilla HTML/CSS/JS login and task management
+- **MySQL Database** — persistent storage with user-task relationships
 - **Network-ready** — accessible from any device on your LAN
 
 ---
@@ -39,16 +41,45 @@ A lightweight REST API for task management with a built-in web UI. Built with Sp
 |------|---------|-------------|
 | Java | 25+ | [jdk.java.net/25/](https://jdk.java.net/25/) |
 | Maven | 3.9+ | Bundled as `./mvnw` |
+| MySQL | 8.0+ | [mysql.com](https://dev.mysql.com/downloads/) |
+
+### Database Setup
+
+```sql
+CREATE DATABASE task;
+USE task;
+
+CREATE TABLE `user` (
+  `user_id` INT NOT NULL AUTO_INCREMENT,
+  `username` VARCHAR(20) NOT NULL UNIQUE,
+  `password` VARCHAR(255) NOT NULL,
+  PRIMARY KEY (`user_id`)
+);
+
+CREATE TABLE `task` (
+  `task_id` INT NOT NULL AUTO_INCREMENT,
+  `title` VARCHAR(20) NOT NULL,
+  `content` VARCHAR(100) NOT NULL,
+  `user_id` INT DEFAULT NULL,
+  PRIMARY KEY (`task_id`),
+  KEY `idx_user_id` (`user_id`),
+  CONSTRAINT `fk_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`)
+);
+
+INSERT INTO `user` (`username`, `password`) VALUES ('Fran', 'fran123'), ('Eva', 'Eva123');
+```
+
+> **Note:** Passwords are automatically hashed with bcrypt on first application startup.
 
 ### Quick Start
 
 ```bash
-git clone https://github.com/<your-user>/task-manager.git
+git clone https://github.com/FranciscoGoal/Task-Manager.git
 cd task-manager
 ./mvnw spring-boot:run
 ```
 
-Open **http://localhost:8080** in your browser.
+Open **http://localhost:8080** in your browser and sign in with `Fran` / `fran123`.
 
 > **Network access:** The server binds to `0.0.0.0`. From another device on the same LAN use `http://<YOUR_LOCAL_IP>:8080`.
 
@@ -68,11 +99,22 @@ Open **http://localhost:8080** in your browser.
 
 ![ER Diagram](assets/diagrams/er.svg)
 
+#### `User`
+
 | Field | Type | Constraints | Description |
 |-------|------|-------------|-------------|
-| `id` | `Long` | PK, Auto-generated | Unique identifier |
+| `userId` | `Integer` | PK, Auto-generated | Unique identifier |
+| `username` | `String` | `NOT NULL, UNIQUE` | Login name |
+| `password` | `String` | `NOT NULL` | bcrypt-hashed password |
+
+#### `Task`
+
+| Field | Type | Constraints | Description |
+|-------|------|-------------|-------------|
+| `taskId` | `Integer` | PK, Auto-generated | Unique identifier |
 | `title` | `String` | `NOT NULL` | Task name |
-| `description` | `String` | Nullable | Optional details |
+| `content` | `String` | `NOT NULL` | Task details |
+| `user` | `User` | FK → `user.user_id` | Owner |
 
 ---
 
@@ -80,126 +122,182 @@ Open **http://localhost:8080** in your browser.
 
 Base URL: `http://localhost:8080`
 
-### `GET /task`
+### Authentication
 
-Returns all tasks.
+#### `POST /login`
+
+Authenticates a user and returns a JWT token.
+
+| | |
+|---|---|
+| **Request body** | `{ "username": "string", "password": "string" }` |
+| **Response 200** | `{ "token": "jwt...", "userId": 1, "username": "Fran" }` |
+| **Response 401** | `{ "error": "..." }` |
+
+```bash
+curl -X POST http://localhost:8080/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "Fran", "password": "fran123"}'
+```
+
+```json
+{
+  "token": "eyJhbGciOiJIUzM4NCJ9...",
+  "userId": 1,
+  "username": "Fran"
+}
+```
+
+#### `POST /register`
+
+Creates a new user and returns a JWT token (auto-login).
+
+| | |
+|---|---|
+| **Request body** | `{ "username": "string", "password": "string (min 4 chars)" }` |
+| **Response 200** | `{ "token": "jwt...", "userId": 3, "username": "..." }` |
+| **Response 400** | `{ "error": "..." }` — validation error |
+| **Response 409** | `{ "error": "El usuario ya existe" }` |
+
+```bash
+curl -X POST http://localhost:8080/register \
+  -H "Content-Type: application/json" \
+  -d '{"username": "NewUser", "password": "mypassword"}'
+```
+
+---
+
+### Tasks
+
+All task endpoints require a valid JWT token in the `Authorization` header:
+
+```
+Authorization: Bearer <token>
+```
+
+#### `GET /task/my`
+
+Returns tasks owned by the authenticated user.
 
 | | |
 |---|---|
 | **Response** | `200 OK` — `List&lt;Task&gt;` |
 
 ```bash
-curl http://localhost:8080/task
+curl http://localhost:8080/task/my \
+  -H "Authorization: Bearer eyJhbGciOiJIUzM4NCJ9..."
 ```
 
 ```json
 [
   {
-    "id": 1,
-    "title": "Buy groceries",
-    "description": "Milk, eggs, bread"
+    "taskId": 3,
+    "title": "Huevos",
+    "content": "comprar huevos XL",
+    "user": { "userId": 1, "username": "Fran" }
   }
 ]
 ```
 
----
+#### `GET /task`
 
-### `POST /task`
-
-Creates a new task.
+Returns all tasks (admin).
 
 | | |
 |---|---|
-| **Request body** | `{ "title": "string (required)", "description": "string (optional)" }` |
-| **Response** | `200 OK` — `Task` with assigned `id` |
+| **Response** | `200 OK` — `List&lt;Task&gt;` |
+
+```bash
+curl http://localhost:8080/task \
+  -H "Authorization: Bearer eyJhbGciOiJIUzM4NCJ9..."
+```
+
+---
+
+#### `POST /task`
+
+Creates a new task for the authenticated user.
+
+| | |
+|---|---|
+| **Request body** | `{ "title": "string (required)", "content": "string (required)" }` |
+| **Response** | `200 OK` — `Task` with assigned `taskId` |
 
 ```bash
 curl -X POST http://localhost:8080/task \
   -H "Content-Type: application/json" \
-  -d '{"title": "Write report", "description": "Q3 financial summary"}'
+  -H "Authorization: Bearer eyJhbGciOiJIUzM4NCJ9..." \
+  -d '{"title": "Write report", "content": "Q3 financial summary"}'
 ```
 
 ```json
 {
-  "id": 2,
+  "taskId": 5,
   "title": "Write report",
-  "description": "Q3 financial summary"
+  "content": "Q3 financial summary",
+  "user": { "userId": 1, "username": "Fran" }
 }
 ```
 
 ---
 
-### `GET /task/{id}`
+#### `GET /task/{id}`
 
 Returns a single task by ID.
 
 | | |
 |---|---|
-| **Path parameter** | `id` — `Long` |
+| **Path parameter** | `id` — `Integer` |
 | **Response 200** | `Task` |
-| **Response 404** | `{ "error": "Could not find task {id}" }` |
+| **Response 404** | `"Could not find task {id}"` |
 
 ```bash
-curl http://localhost:8080/task/1
+curl http://localhost:8080/task/3 \
+  -H "Authorization: Bearer eyJhbGciOiJIUzM4NCJ9..."
 ```
 
 ```json
 {
-  "id": 1,
-  "title": "Buy groceries",
-  "description": "Milk, eggs, bread"
-}
-```
-
-```bash
-curl http://localhost:8080/task/99
-```
-
-```json
-{
-  "error": "Could not find task 99"
+  "taskId": 3,
+  "title": "Huevos",
+  "content": "comprar huevos XL",
+  "user": { "userId": 1, "username": "Fran" }
 }
 ```
 
 ---
 
-### `PUT /task/{id}`
+#### `PUT /task/{id}`
 
 Replaces an existing task (full update). If the task does not exist, it is created.
 
 | | |
 |---|---|
-| **Path parameter** | `id` — `Long` |
-| **Request body** | `{ "id": Long, "title": "string", "description": "string" }` |
+| **Path parameter** | `id` — `Integer` |
+| **Request body** | `{ "taskId": Integer, "title": "string", "content": "string" }` |
 | **Response** | `200 OK` — Updated `Task` |
 
 ```bash
-curl -X PUT http://localhost:8080/task/2 \
+curl -X PUT http://localhost:8080/task/3 \
   -H "Content-Type: application/json" \
-  -d '{"id": 2, "title": "Write final report", "description": "Q3 financial summary – updated"}'
-```
-
-```json
-{
-  "id": 2,
-  "title": "Write final report",
-  "description": "Q3 financial summary – updated"
-}
+  -H "Authorization: Bearer eyJhbGciOiJIUzM4NCJ9..." \
+  -d '{"taskId": 3, "title": "Huevos XL", "content": "comprar huevos extra grandes"}'
 ```
 
 ---
 
-### `DELETE /task/{id}`
+#### `DELETE /task/{id}`
 
 Deletes a task by ID.
 
 | | |
 |---|---|
-| **Path parameter** | `id` — `Long` |
+| **Path parameter** | `id` — `Integer` |
 | **Response** | `200 OK` — no body |
 
 ```bash
-curl -X DELETE http://localhost:8080/task/1
+curl -X DELETE http://localhost:8080/task/3 \
+  -H "Authorization: Bearer eyJhbGciOiJIUzM4NCJ9..."
 ```
 
 ---
@@ -208,10 +306,13 @@ curl -X DELETE http://localhost:8080/task/1
 
 Open **http://localhost:8080** in your browser.
 
-- **Add** a task using the form at the top
-- **Edit** inline by clicking the *Edit* button
-- **Delete** with confirmation via the *Delete* button
-- **Keyboard shortcuts:** `Enter` to submit, `Escape` to cancel editing
+1. **Sign In** — login with username/password, or toggle to **Sign Up** to create an account
+2. **Task list** — shows only tasks belonging to the logged-in user
+3. **Add** — create a task using the form at the top
+4. **Edit** — inline by clicking the *Edit* button
+5. **Delete** — with confirmation via the *Delete* button
+6. **Logout** — top-right button clears session and returns to login
+7. **Keyboard shortcuts:** `Enter` to submit, `Escape` to cancel editing
 
 ---
 
@@ -219,23 +320,33 @@ Open **http://localhost:8080** in your browser.
 
 File: `src/main/resources/application.properties`
 
+### Database
+
+| Property | Description |
+|----------|-------------|
+| `spring.datasource.url` | JDBC URL — `jdbc:mysql://127.0.0.1:3306/task` |
+| `spring.datasource.username` | MySQL user |
+| `spring.datasource.password` | MySQL password |
+| `spring.jpa.hibernate.ddl-auto` | `update` — auto-syncs schema with entities |
+
+### JWT
+
+| Property | Description |
+|----------|-------------|
+| `jwt.secret` | HMAC key (min 256 bits) |
+| `jwt.expiration` | Token expiry in ms (default: 86400000 = 24h) |
+
+### Server
+
 | Property | Default | Description |
 |----------|---------|-------------|
 | `server.port` | `8080` | Web server port |
 | `server.address` | `0.0.0.0` | Bind address |
 
-> **Note:** Persistent database integration (PostgreSQL/MySQL) is in progress. Currently using H2 in-memory — data is lost on restart.
-
 **Change port:**
 
 ```properties
 server.port=9090
-```
-
-**Persist data to disk (default is in-memory):**
-
-```properties
-spring.datasource.url=jdbc:h2:file:./data/taskmanager
 ```
 
 ---
@@ -244,19 +355,28 @@ spring.datasource.url=jdbc:h2:file:./data/taskmanager
 
 ```
 src/main/java/com/example/task_manager/
-├── Task.java                     # JPA entity
-├── TaskController.java           # REST controller
-├── TaskRepository.java           # Spring Data repository
-├── TaskNotFoundException.java    # Custom 404 exception
-├── TaskNotFoundAdvice.java       # Global error handler
-├── TaskManagerApplication.java   # Application entry point
-└── LoadDatabase.java             # Demo data seeder
+├── AuthController.java          # POST /login, POST /register
+├── AuthService.java             # Authentication + registration logic
+├── JwtAuthenticationFilter.java  # JWT validation filter
+├── JwtService.java              # JWT token generation / parsing
+├── SecurityConfig.java          # Spring Security configuration
+├── User.java                    # User JPA entity
+├── UserRepository.java          # User data access
+├── Task.java                    # Task JPA entity
+├── TaskController.java          # REST controller (CRUD + /task/my)
+├── TaskRepository.java          # Task data access
+├── TaskNotFoundException.java   # Custom 404 exception
+├── TaskNotFoundAdvice.java      # Global error handler
+├── TaskManagerApplication.java  # Application entry point
+├── LoadDatabase.java            # Password hasher on startup
+└── WebConfig.java               # Root redirect to login.html
 
 src/main/resources/
 ├── static/
-│   ├── index.html                # Web UI
-│   └── styles.css                # Stylesheet
-└── application.properties        # Configuration
+│   ├── login.html               # Login / Register page
+│   ├── tasks.html               # Task management UI
+│   └── styles.css               # Stylesheet
+└── application.properties       # Configuration
 ```
 
 ---
@@ -286,17 +406,19 @@ docker run -p 8080:8080 task-manager
 
 Open **http://localhost:8080** in your browser.
 
+> **Note:** The Docker container connects to MySQL on the host. Use `--network="host"` or configure `spring.datasource.url` accordingly.
+
 > The `Dockerfile` uses a multi-stage build with `eclipse-temurin:25-jdk-alpine` for compilation and `eclipse-temurin:25-jre-alpine` for runtime. The final image is ~150MB.
 
 ---
 
 ## Roadmap
 
-- [ ] **Persistent database** — PostgreSQL/MySQL support (currently using in-memory H2)
-- [ ] **Authentication** — JWT-based user authentication
+- [x] **Persistent database** — MySQL support (replaced in-memory H2)
+- [x] **Authentication** — JWT-based user login and registration
 - [ ] **Task categories** — add labels and filters
 - [ ] **Due dates** — deadline tracking for tasks
-- [ ] **Docker Compose** — add PostgreSQL service for local development
+- [ ] **Docker Compose** — add MySQL service for local development
 - [ ] **Deploy** — one-click deploy to Railway / Render / Fly.io
 
 ---

@@ -1,6 +1,12 @@
 erDiagram
     TASK {
-        Long id PK "AUTO_INCREMENT"
+        Integer taskId PK "AUTO_INCREMENT"
         String title "NOT NULL"
-        String description "NULLABLE"
+        String content "NOT NULL"
     }
+    USER {
+        Integer userId PK "AUTO_INCREMENT"
+        String username "NOT NULL, UNIQUE"
+        String password "NOT NULL"
+    }
+    USER ||--o{ TASK : "has"
