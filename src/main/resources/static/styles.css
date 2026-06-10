@@ -19,6 +19,7 @@ h1 {
     font-size: 1.75rem;
     color: #0f172a;
     margin-bottom: 1.5rem;
+    text-align: center;
 }
 .form {
     display: flex;
