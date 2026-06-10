@@ -261,6 +261,8 @@ File: `src/main/resources/application.properties`
 | `server.port` | `8080` | Web server port |
 | `server.address` | `0.0.0.0` | Bind address |
 
+> **Note:** Persistent database integration (PostgreSQL/MySQL) is in progress. Currently using H2 in-memory — data is lost on restart.
+
 **Change port:**
 
 ```properties
