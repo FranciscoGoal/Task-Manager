@@ -5,7 +5,7 @@
 ![H2](https://img.shields.io/badge/Database-H2-%23007396?style=flat-square)
 ![License](https://img.shields.io/badge/license-Unlicense-blue?style=flat-square)
 
-A lightweight REST API for task management with a built-in web UI. Built with Spring Boot and designed for simplicity — no external database required.
+A lightweight REST API for task management with a built-in web UI. Built with Spring Boot and designed for simplicity —  external database integration in progress.
 
 - **RESTful API** — full CRUD operations with JSON
 - **Web UI** — vanilla HTML/CSS/JS interface at `/`
