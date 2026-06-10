@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Client
+    participant AuthCtrl as AuthController
+    participant AuthSvc as AuthService
+    participant JwtSvc as JwtService
+    participant DB as MySQL Database
+
+    Note over Client,DB: Authentication
+    Client->>AuthCtrl: POST /login {username, password}
+    AuthCtrl->>AuthSvc: login(username, password)
+    AuthSvc->>DB: SELECT * FROM user WHERE username=?
+    DB-->>AuthSvc: User
+    Note over AuthSvc: BCrypt.matches(password)
+    AuthSvc->>JwtSvc: generateToken(userId, username)
+    JwtSvc-->>AuthSvc: JWT token
+    AuthSvc-->>AuthCtrl: {token, userId, username}
+    AuthCtrl-->>Client: 200 OK — {token, userId, username}

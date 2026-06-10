@@ -1,23 +1,37 @@
-flowchart LR
-    Browser["🌐 Browser"] -->|"HTTP :8080"| SB["Spring Boot"]
+flowchart TB
+    Browser["🌐 Browser"] -->|"HTTP :8080"| SB
     Client["💻 curl / Postman"] -->|"REST API"| SB
 
-    subgraph SB [Spring Boot Application]
-        Web["login.html / tasks.html<br/>Web UI"]
-        AuthCtrl["AuthController<br/>/login / /register"]
-        AuthSvc["AuthService<br/>Login + Register"]
-        JwtSvc["JwtService<br/>Token gen / parse"]
-        JwtFilter["JwtAuthenticationFilter<br/>JWT validation"]
-        TaskCtrl["TaskController<br/>REST CRUD"]
-        TaskRepo["TaskRepository<br/>JPA"]
-        UserRepo["UserRepository<br/>JPA"]
+    subgraph SB["Spring Boot Application"]
+        direction TB
+
+        subgraph Web["Web Layer"]
+            WebUI["login.html / tasks.html<br/>Web UI"]
+            AuthCtrl["AuthController<br/>/login / /register"]
+            TaskCtrl["TaskController<br/>REST CRUD"]
+        end
+
+        subgraph Security["Security Layer"]
+            JwtFilter["JwtAuthenticationFilter<br/>JWT validation"]
+            JwtSvc["JwtService<br/>Token gen / parse"]
+        end
+
+        subgraph Business["Business Layer"]
+            AuthSvc["AuthService<br/>Login + Register"]
+        end
+
+        subgraph Data["Data Layer"]
+            TaskRepo["TaskRepository<br/>JPA"]
+            UserRepo["UserRepository<br/>JPA"]
+        end
+
         Advice["TaskNotFoundAdvice<br/>@ExceptionHandler"]
     end
 
-    Web --> Browser
     TaskRepo --> DB[("MySQL<br/>Database")]
     UserRepo --> DB
     AuthCtrl --> AuthSvc
     AuthSvc --> JwtSvc
     AuthSvc --> UserRepo
     TaskCtrl --> TaskRepo
+    WebUI --> Browser

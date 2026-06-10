@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Client
+    participant Filter as JwtAuthenticationFilter
+    participant Ctrl as TaskController
+    participant Repo as TaskRepository
+    participant DB as MySQL Database
+
+    Note over Client,DB: Authenticated Request
+    Client->>Filter: GET /task/my (Authorization: Bearer token)
+    Filter->>Filter: parseToken(token)
+    Note over Filter: validate JWT + set SecurityContext
+    Filter->>Ctrl: forward request
+    Ctrl->>Repo: findByUserUserId(userId)
+    Repo->>DB: SELECT * FROM task WHERE user_id=?
+    DB-->>Repo: [Task, ...]
+    Repo-->>Ctrl: Task list
+    Ctrl-->>Client: 200 OK — JSON array

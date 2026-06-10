@@ -91,9 +91,13 @@ Open **http://localhost:8080** in your browser and sign in with `Fran` / `fran12
 
 ![Layer Diagram](assets/diagrams/layer.svg)
 
-### Request Flow
+### Authentication Flow
 
-![Request Flow](assets/diagrams/sequence.svg)
+![Authentication Flow](assets/diagrams/sequence-auth.svg)
+
+### Authenticated Request Flow
+
+![Authenticated Request Flow](assets/diagrams/sequence-task.svg)
 
 ### Entity-Relationship
 
