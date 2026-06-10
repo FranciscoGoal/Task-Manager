@@ -83,7 +83,7 @@ sequenceDiagram
     Controller->>Repository: findAll()
     Repository->>DB: SELECT * FROM task
     DB-->>Repository: [Task, ...]
-    Repository-->>Controller: List&lt;Task&gt;
+    Repository-->>Controller: Task list
     Controller-->>Client: 200 OK — JSON array
 
     Client->>Controller: POST /task {title, description}
