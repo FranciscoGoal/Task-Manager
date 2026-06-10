@@ -1,8 +1,11 @@
 sequenceDiagram
     participant Client
+    participant Filter as JwtAuthenticationFilter
     participant AuthCtrl as AuthController
     participant AuthSvc as AuthService
     participant JwtSvc as JwtService
+    participant Ctrl as TaskController
+    participant Repo as TaskRepository
     participant DB as MySQL Database
 
     Note over Client,DB: Authentication
@@ -15,3 +18,15 @@ sequenceDiagram
     JwtSvc-->>AuthSvc: JWT token
     AuthSvc-->>AuthCtrl: {token, userId, username}
     AuthCtrl-->>Client: 200 OK — {token, userId, username}
+
+    Note over Client,DB: Authenticated Request (with JWT)
+    Client->>Filter: GET /task/my (Authorization: Bearer token)
+    Filter->>JwtSvc: parseToken(token)
+    JwtSvc-->>Filter: Claims (userId)
+    Note over Filter: Set SecurityContext
+    Filter->>Ctrl: forward request
+    Ctrl->>Repo: findByUserUserId(userId)
+    Repo->>DB: SELECT * FROM task WHERE user_id=?
+    DB-->>Repo: [Task, ...]
+    Repo-->>Ctrl: Task list
+    Ctrl-->>Client: 200 OK — JSON array

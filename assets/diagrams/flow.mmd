@@ -1,0 +1,25 @@
+flowchart TB
+    Start(["User"]) --> Login["Login Page<br/>login.html"]
+
+    Login -->|"Sign In"| AuthAPI["POST /login"]
+    Login -->|"Sign Up"| RegAPI["POST /register"]
+
+    AuthAPI --> AuthSvc["AuthService"]
+    RegAPI --> AuthSvc
+
+    AuthSvc --> JWT["JWT Token<br/>generated"]
+    JWT --> Dashboard["Task Dashboard<br/>tasks.html"]
+
+    Dashboard --> LoadTasks["GET /task/my<br/>List user tasks"]
+    Dashboard --> AddTask["POST /task<br/>Create task"]
+    Dashboard --> EditTask["PUT /task/{id}<br/>Update task"]
+    Dashboard --> DelTask["DELETE /task/{id}<br/>Delete task"]
+
+    LoadTasks --> TaskRepo["TaskRepository"]
+    AddTask --> TaskRepo
+    EditTask --> TaskRepo
+    DelTask --> TaskRepo
+
+    TaskRepo --> MySQL[("MySQL Database")]
+
+    Dashboard -->|"Logout"| Login
