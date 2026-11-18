@@ -1,450 +1,178 @@
-# Task Manager API
+# Task Manager
 
-![Java](https://img.shields.io/badge/Java-25-%23ED8B00?style=flat-square)
-![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.0.6-%236DB33F?style=flat-square)
-![MySQL](https://img.shields.io/badge/Database-MySQL-%234479A1?style=flat-square)
-![JWT](https://img.shields.io/badge/Auth-JWT-%23000000?style=flat-square)
-![License](https://img.shields.io/badge/license-Unlicense-blue?style=flat-square)
-![CI](https://github.com/FranciscoGoal/Task-Manager/actions/workflows/maven.yml/badge.svg)
+A Spring Boot REST API for personal task lists, with JWT authentication, MySQL storage and a small built-in web interface.
 
-A REST API for task management with user authentication, persistent MySQL storage, and a built-in web UI. Built with Spring Boot.
+[![CI](https://github.com/FranciscoGoal/Task-Manager/actions/workflows/maven.yml/badge.svg)](https://github.com/FranciscoGoal/Task-Manager/actions/workflows/maven.yml)
+![Java 25](https://img.shields.io/badge/Java-25-informational?style=flat-square)
+![Spring Boot 4.0](https://img.shields.io/badge/Spring_Boot-4.0-informational?style=flat-square)
+![License: Unlicense](https://img.shields.io/badge/license-Unlicense-lightgrey?style=flat-square)
 
-- **RESTful API** — full CRUD operations with JSON
-- **Authentication** — JWT-based login and registration
-- **Web UI** — vanilla HTML/CSS/JS login and task management
-- **MySQL Database** — persistent storage with user-task relationships
-- **Network-ready** — accessible from any device on your LAN
+## Purpose
 
----
+This was my first Spring Boot project. It began as an in-memory CRUD API backed by H2 and grew step by step: MySQL persistence, password hashing, JWT login and registration, a browser interface, a Dockerfile and a CI pipeline. The commit history shows each step.
 
-## Table of Contents
+## Features
 
-- [Getting Started](#getting-started)
-- [Architecture](#architecture)
-- [API Reference](#api-reference)
-- [Web Interface](#web-interface)
-- [Configuration](#configuration)
-- [Project Structure](#project-structure)
-- [Building](#building)
-- [Docker](#docker)
-- [Roadmap](#roadmap)
-- [Contributing](#contributing)
-- [License](#license)
+- **Task CRUD** over REST, plus `GET /task/my`, which returns only the authenticated user's tasks.
+- **Registration and login** that return a JWT signed with HMAC-SHA via jjwt 0.12. The token's subject is the user ID.
+- **Custom JWT filter.** A `OncePerRequestFilter` validates `Authorization: Bearer` tokens and populates the `SecurityContext`.
+- **Stateless security.** `/task/**` requires authentication.
+- **Password hashing** with bcrypt. A startup runner hashes any plain-text passwords inserted directly into the database.
+- **Automatic creation date.** `startDate` is set when a task is created.
+- **Web interface** (`login.html`, `tasks.html`, vanilla JS). Sign in or sign up, then list, add, edit inline and delete tasks.
+- **Delivery tooling.** A multi-stage Dockerfile (Temurin 25 JDK → JRE) and a GitHub Actions workflow that builds and tests against a MySQL 8 service container.
 
----
+## Tech stack
 
-## Getting Started
-
-### Prerequisites
-
-| Tool | Version | Installation |
-|------|---------|-------------|
-| Java | 25+ | [jdk.java.net/25/](https://jdk.java.net/25/) |
-| Maven | 3.9+ | Bundled as `./mvnw` |
-| MySQL | 8.0+ | [mysql.com](https://dev.mysql.com/downloads/) |
-
-### Database Setup
-
-```sql
-CREATE DATABASE task;
-USE task;
-
-CREATE TABLE `user` (
-  `user_id` INT NOT NULL AUTO_INCREMENT,
-  `username` VARCHAR(20) NOT NULL UNIQUE,
-  `password` VARCHAR(255) NOT NULL,
-  PRIMARY KEY (`user_id`)
-);
-
-CREATE TABLE `task` (
-  `task_id` INT NOT NULL AUTO_INCREMENT,
-  `title` VARCHAR(20) NOT NULL,
-  `content` VARCHAR(100) NOT NULL,
-  `start_date` DATETIME DEFAULT CURRENT_TIMESTAMP,
-  `user_id` INT DEFAULT NULL,
-  PRIMARY KEY (`task_id`),
-  KEY `idx_user_id` (`user_id`),
-  CONSTRAINT `fk_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`)
-);
-
-INSERT INTO `user` (`username`, `password`) VALUES ('test', 'test'));
-```
-
-> **Note:** Passwords are automatically hashed with bcrypt on first application startup.
-
-### Quick Start
-
-```bash
-git clone https://github.com/FranciscoGoal/Task-Manager.git
-cd task-manager
-./mvnw spring-boot:run
-```
-
-Open **http://localhost:8080** in your browser and sign in with `Fran` / `fran123`.
-
-> **Network access:** The server binds to `0.0.0.0`. From another device on the same LAN use `http://<YOUR_LOCAL_IP>:8080`.
-
----
+| Technology | Role |
+| --- | --- |
+| Java 25 | Language |
+| Spring Boot 4.0 (Web MVC) | Application framework and REST layer |
+| Spring Security | Filter chain and stateless configuration |
+| jjwt 0.12 | JWT creation and parsing |
+| Spring Data JPA / Hibernate | Persistence |
+| MySQL 8 | Database |
+| HTML, CSS, JavaScript | Built-in web interface |
+| Maven, Docker, GitHub Actions | Build, packaging and CI |
 
 ## Architecture
 
-### Layer Diagram
+The code is a flat, single-package Spring Boot application: controllers, an auth service, the JWT filter and service, entities and repositories.
 
-![Layer Diagram](assets/diagrams/layer.svg)
+![Layer diagram](assets/diagrams/layer.svg)
 
-### Request Flow
+<details>
+<summary><strong>Request sequence, application flow and ER diagram</strong></summary>
 
-![Request Flow](assets/diagrams/sequence.svg)
+![Request sequence](assets/diagrams/sequence.svg)
 
-### Application Flow
+![Application flow](assets/diagrams/flow.svg)
 
-![Application Flow](assets/diagrams/flow.svg)
+![Entity-relationship diagram](assets/diagrams/er.svg)
 
-### Entity-Relationship
+</details>
 
-![ER Diagram](assets/diagrams/er.svg)
+## Getting started
 
-#### `User`
+### Requirements
 
-| Field | Type | Constraints | Description |
-|-------|------|-------------|-------------|
-| `userId` | `Integer` | PK, Auto-generated | Unique identifier |
-| `username` | `String` | `NOT NULL, UNIQUE` | Login name |
-| `password` | `String` | `NOT NULL` | bcrypt-hashed password |
+- Java 25
+- MySQL 8 on `127.0.0.1:3306`
 
-#### `Task`
+### 1. Create the database
 
-| Field | Type | Constraints | Description |
-|-------|------|-------------|-------------|
-| `taskId` | `Integer` | PK, Auto-generated | Unique identifier |
-| `title` | `String` | `NOT NULL` | Task name |
-| `content` | `String` | `NOT NULL` | Task details |
-| `startDate` | `LocalDateTime` | — | Auto-assigned on creation |
-| `user` | `User` | FK → `user.user_id` | Owner |
-
----
-
-## API Reference
-
-Base URL: `http://localhost:8080`
-
-### Authentication
-
-#### `POST /login`
-
-Authenticates a user and returns a JWT token.
-
-| | |
-|---|---|
-| **Request body** | `{ "username": "string", "password": "string" }` |
-| **Response 200** | `{ "token": "jwt...", "userId": 1, "username": "Fran" }` |
-| **Response 401** | `{ "error": "..." }` |
-
-```bash
-curl -X POST http://localhost:8080/login \
-  -H "Content-Type: application/json" \
-  -d '{"username": "Fran", "password": "fran123"}'
+```sql
+CREATE DATABASE task;
 ```
 
-```json
-{
-  "token": "eyJhbGciOiJIUzM4NCJ9...",
-  "userId": 1,
-  "username": "Fran"
-}
-```
+Hibernate creates the `user` and `task` tables on first start (`ddl-auto=update`).
 
-#### `POST /register`
+### 2. Configure
 
-Creates a new user and returns a JWT token (auto-login).
-
-| | |
-|---|---|
-| **Request body** | `{ "username": "string", "password": "string (min 4 chars)" }` |
-| **Response 200** | `{ "token": "jwt...", "userId": 3, "username": "..." }` |
-| **Response 400** | `{ "error": "..." }` — validation error |
-| **Response 409** | `{ "error": "El usuario ya existe" }` |
+`application.properties` contains **development defaults only**: MySQL user `root` / `root` and a sample JWT secret. Override them with environment variables, which Spring Boot maps to the matching properties:
 
 ```bash
+export SPRING_DATASOURCE_USERNAME="<your-mysql-user>"
+export SPRING_DATASOURCE_PASSWORD="<your-mysql-password>"
+export JWT_SECRET="<a-random-secret-of-at-least-32-bytes>"
+export JWT_EXPIRATION=86400000   # token lifetime in ms (24 h)
+```
+
+### 3. Run
+
+```bash
+git clone https://github.com/FranciscoGoal/Task-Manager.git
+cd Task-Manager
+./mvnw spring-boot:run
+```
+
+Open <http://localhost:8080> and use **Sign up** to create an account.
+
+The server binds to `0.0.0.0`, so other devices on the same network can reach it at `http://<your-local-ip>:8080`.
+
+### Run with Docker
+
+The image contains only the application. MySQL must be reachable from the container:
+
+```bash
+docker build -t task-manager .
+docker run -p 8080:8080 \
+  -e SPRING_DATASOURCE_URL="jdbc:mysql://host.docker.internal:3306/task" \
+  -e SPRING_DATASOURCE_USERNAME="<your-mysql-user>" \
+  -e SPRING_DATASOURCE_PASSWORD="<your-mysql-password>" \
+  -e JWT_SECRET="<a-random-secret-of-at-least-32-bytes>" \
+  task-manager
+```
+
+On Linux, add `--add-host=host.docker.internal:host-gateway`, or use `--network=host` and keep the default URL.
+
+## API
+
+All `/task` endpoints require `Authorization: Bearer <token>`.
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `POST` | `/register` | Create an account and receive a token. The password must be at least 4 characters. |
+| `POST` | `/login` | Authenticate and receive a token |
+| `GET` | `/task/my` | Tasks owned by the authenticated user |
+| `GET` | `/task` | All tasks (see [limitations](#known-limitations)) |
+| `POST` | `/task` | Create a task for the authenticated user |
+| `GET` | `/task/{id}` | One task, or `404` if it does not exist |
+| `PUT` | `/task/{id}` | Update a task's title and content |
+| `DELETE` | `/task/{id}` | Delete a task |
+
+### Example
+
+```bash
+# Register (or use /login with the same body)
 curl -X POST http://localhost:8080/register \
   -H "Content-Type: application/json" \
-  -d '{"username": "NewUser", "password": "mypassword"}'
-```
-
----
-
-### Tasks
-
-All task endpoints require a valid JWT token in the `Authorization` header:
-
-```
-Authorization: Bearer <token>
-```
-
-#### `GET /task/my`
-
-Returns tasks owned by the authenticated user.
-
-| | |
-|---|---|
-| **Response** | `200 OK` — `List&lt;Task&gt;` |
-
-```bash
-curl http://localhost:8080/task/my \
-  -H "Authorization: Bearer eyJhbGciOiJIUzM4NCJ9..."
+  -d '{"username":"jane","password":"change-me"}'
 ```
 
 ```json
-[
-  {
-    "taskId": 3,
-    "title": "Huevos",
-    "content": "comprar huevos XL",
-    "startDate": "2026-06-10T21:30:00",
-    "user": { "userId": 1, "username": "Fran" }
-  }
-]
+{ "token": "<jwt>", "userId": 1, "username": "jane" }
 ```
 
-#### `GET /task`
-
-Returns all tasks (admin).
-
-| | |
-|---|---|
-| **Response** | `200 OK` — `List&lt;Task&gt;` |
-
 ```bash
-curl http://localhost:8080/task \
-  -H "Authorization: Bearer eyJhbGciOiJIUzM4NCJ9..."
-```
-
----
-
-#### `POST /task`
-
-Creates a new task for the authenticated user.
-
-| | |
-|---|---|
-| **Request body** | `{ "title": "string (required)", "content": "string (required)" }` — `startDate` is auto-assigned |
-| **Response** | `200 OK` — `Task` with assigned `taskId` and `startDate` |
-
-```bash
+# Create a task
 curl -X POST http://localhost:8080/task \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzM4NCJ9..." \
-  -d '{"title": "Write report", "content": "Q3 financial summary"}'
+  -H "Authorization: Bearer <jwt>" \
+  -d '{"title":"Write report","content":"Monthly summary"}'
 ```
 
 ```json
 {
-  "taskId": 5,
+  "taskId": 1,
   "title": "Write report",
-  "content": "Q3 financial summary",
+  "content": "Monthly summary",
   "startDate": "2026-06-10T21:30:00",
-  "user": { "userId": 1, "username": "Fran" }
+  "user": { "userId": 1, "username": "jane" }
 }
 ```
 
----
+Field limits come from the entity mapping: `title` up to 20 characters, `content` up to 100, `username` up to 20.
 
-#### `GET /task/{id}`
-
-Returns a single task by ID.
-
-| | |
-|---|---|
-| **Path parameter** | `id` — `Integer` |
-| **Response 200** | `Task` |
-| **Response 404** | `"Could not find task {id}"` |
+## Tests
 
 ```bash
-curl http://localhost:8080/task/3 \
-  -H "Authorization: Bearer eyJhbGciOiJIUzM4NCJ9..."
+./mvnw test
 ```
 
-```json
-{
-  "taskId": 3,
-  "title": "Huevos",
-  "content": "comprar huevos XL",
-  "startDate": "2026-06-10T21:30:00",
-  "user": { "userId": 1, "username": "Fran" }
-}
-```
+The suite contains only the Spring Boot context-load test, which needs MySQL. CI provides MySQL as a service container.
 
----
+## Known limitations
 
-#### `PUT /task/{id}`
+These are known issues. I have documented them here rather than hidden them.
 
-Replaces an existing task (full update). If the task does not exist, it is created.
-
-| | |
-|---|---|
-| **Path parameter** | `id` — `Integer` |
-| **Request body** | `{ "taskId": Integer, "title": "string", "content": "string" }` — `startDate` is preserved |
-| **Response** | `200 OK` — Updated `Task` |
-
-```bash
-curl -X PUT http://localhost:8080/task/3 \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzM4NCJ9..." \
-  -d '{"taskId": 3, "title": "Huevos XL", "content": "comprar huevos extra grandes"}'
-```
-
----
-
-#### `DELETE /task/{id}`
-
-Deletes a task by ID.
-
-| | |
-|---|---|
-| **Path parameter** | `id` — `Integer` |
-| **Response** | `200 OK` — no body |
-
-```bash
-curl -X DELETE http://localhost:8080/task/3 \
-  -H "Authorization: Bearer eyJhbGciOiJIUzM4NCJ9..."
-```
-
----
-
-## Web Interface
-
-Open **http://localhost:8080** in your browser.
-
-1. **Sign In** — login with username/password, or toggle to **Sign Up** to create an account
-2. **Task list** — shows only tasks belonging to the logged-in user
-3. **Add** — create a task using the form at the top
-4. **Edit** — inline by clicking the *Edit* button
-5. **Delete** — with confirmation via the *Delete* button
-6. **Logout** — top-right button clears session and returns to login
-7. **Keyboard shortcuts:** `Enter` to submit, `Escape` to cancel editing
-
----
-
-## Configuration
-
-File: `src/main/resources/application.properties`
-
-### Database
-
-| Property | Description |
-|----------|-------------|
-| `spring.datasource.url` | JDBC URL — `jdbc:mysql://127.0.0.1:3306/task` |
-| `spring.datasource.username` | MySQL user |
-| `spring.datasource.password` | MySQL password |
-| `spring.jpa.hibernate.ddl-auto` | `update` — auto-syncs schema with entities |
-
-### JWT
-
-| Property | Description |
-|----------|-------------|
-| `jwt.secret` | HMAC key (min 256 bits) |
-| `jwt.expiration` | Token expiry in ms (default: 86400000 = 24h) |
-
-### Server
-
-| Property | Default | Description |
-|----------|---------|-------------|
-| `server.port` | `8080` | Web server port |
-| `server.address` | `0.0.0.0` | Bind address |
-
-**Change port:**
-
-```properties
-server.port=9090
-```
-
----
-
-## Project Structure
-
-```
-src/main/java/com/example/task_manager/
-├── AuthController.java          # POST /login, POST /register
-├── AuthService.java             # Authentication + registration logic
-├── JwtAuthenticationFilter.java  # JWT validation filter
-├── JwtService.java              # JWT token generation / parsing
-├── SecurityConfig.java          # Spring Security configuration
-├── User.java                    # User JPA entity
-├── UserRepository.java          # User data access
-├── Task.java                    # Task JPA entity
-├── TaskController.java          # REST controller (CRUD + /task/my)
-├── TaskRepository.java          # Task data access
-├── TaskNotFoundException.java   # Custom 404 exception
-├── TaskNotFoundAdvice.java      # Global error handler
-├── TaskManagerApplication.java  # Application entry point
-├── LoadDatabase.java            # Password hasher on startup
-└── WebConfig.java               # Root redirect to login.html
-
-src/main/resources/
-├── static/
-│   ├── login.html               # Login / Register page
-│   ├── tasks.html               # Task management UI
-│   └── styles.css               # Stylesheet
-└── application.properties       # Configuration
-```
-
----
-
-## Building
-
-Generate a production JAR:
-
-```bash
-./mvnw package
-java -jar target/task-manager-0.0.1-SNAPSHOT.jar
-```
-
----
-
-## Docker
-
-Build and run the application using Docker:
-
-```bash
-# Build the image
-docker build -t task-manager .
-
-# Run the container
-docker run -p 8080:8080 task-manager
-```
-
-Open **http://localhost:8080** in your browser.
-
-> **Note:** The Docker container connects to MySQL on the host. Use `--network="host"` or configure `spring.datasource.url` accordingly.
-
-> The `Dockerfile` uses a multi-stage build with `eclipse-temurin:25-jdk-alpine` for compilation and `eclipse-temurin:25-jre-alpine` for runtime. The final image is ~150MB.
-
----
-
-## Roadmap
-
-- [x] **Persistent database** — MySQL support (replaced in-memory H2)
-- [x] **Authentication** — JWT-based user login and registration
-- [ ] **Task categories** — add labels and filters
-- [x] **Auto timestamp** — creation date tracked automatically
-- [ ] **Due dates** — deadline tracking for tasks
-- [ ] **Docker Compose** — add MySQL service for local development
-- [ ] **Deploy** — one-click deploy to Railway / Render / Fly.io
-
----
-
-## Contributing
-
-Contributions are welcome! Feel free to open an issue or submit a pull request.
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/my-feature`
-3. Commit your changes: `git commit -m "Add my feature"`
-4. Push to the branch: `git push origin feature/my-feature`
-5. Open a Pull Request
-
----
+- **No ownership checks on single-task routes.** `GET`, `PUT` and `DELETE /task/{id}` act on any task ID for any authenticated user, and `GET /task` returns every user's tasks. There is no admin role.
+- **`PUT` on a missing ID** saves the request body as a new task without an owner, instead of returning `404`.
+- **Minimal validation.** Titles or contents longer than the column limits cause a database error instead of a `400` response.
+- **Login errors reveal too much.** They distinguish an unknown user from a wrong password, and some messages are in Spanish.
+- **Development credentials** live in `application.properties` and must be overridden outside local development.
+- **Test coverage** is limited to the context-load test.
 
 ## License
 
-This is free and unencumbered software released into the public domain. See [LICENSE](LICENSE) for details.
+Released into the public domain under the [Unlicense](LICENSE).
